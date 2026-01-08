@@ -1,30 +1,29 @@
 extends Node3D
 
-@onready var camera_pivot = $CameraPivot
 @onready var hand_slot = $HandSlot
 @onready var anim_player = $AnimationPlayer  # Adjust path if nested under Armature
 
-@export var mouse_sensitivity := 0.3
 @export var move_speed := 5.0
 
-var rotation_x := 0.0  # vertical look
-var rotation_y := 0.0  # horizontal look
+#var rotation_x := 0.0  # vertical look
+#var rotation_y := 0.0  # horizontal look
 var held_item: Node3D = null
 
-func _ready():
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)  # show cursor when menu loadsshow_main_menu()
-
+#func _ready():
+	#Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)  # show cursor when menu loadsshow_main_menu()
+	## Fixed angled camera
+	#camera_pivot.rotation_degrees = Vector3(-45, 0, 0)  # tilt down at 45°
 
 #handle the movement of the mouse, camera and character 
 #- Rotates the player horizontally (rotation_y) and the camera pivot vertically (rotation_x).- Vertical rotation is clamped between -80° and 80° to prevent flipping
-func _unhandled_input(event):
-	if event is InputEventMouseMotion:
-		rotation_y -= event.relative.x * mouse_sensitivity
-		rotation_x -= event.relative.y * mouse_sensitivity
-		rotation_x = clamp(rotation_x, -80, 80)
-
-		rotation_degrees.y = rotation_y
-		camera_pivot.rotation_degrees.x = rotation_x
+#func _unhandled_input(event):
+	#if event is InputEventMouseMotion:
+		##rotation_y -= event.relative.x * mouse_sensitivity
+		##rotation_x -= event.relative.y * mouse_sensitivity
+		#rotation_x = clamp(rotation_x, -80, 80)
+#
+		#rotation_degrees.y = rotation_y
+		#camera_pivot.rotation_degrees.x = rotation_x
 
 func _physics_process(delta):
 	var input_dir = Vector3.ZERO
@@ -40,6 +39,7 @@ func _physics_process(delta):
 		if not anim_player.is_playing() or anim_player.current_animation != "ArmatureAction":
 			anim_player.play("ArmatureAction")
 
+#--- Item handling---# no ready yet
 func pick_up(item: Node3D):
 	if held_item == null:
 		held_item = item
