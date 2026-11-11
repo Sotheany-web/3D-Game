@@ -5,6 +5,24 @@ Apply Object-Oriented Programming (OOP)  Build an interactive game using Godot  
 
 A 3D restaurant simulation game built with Godot Engine, inspired by games such as Pizza Ready and Good Pizza, Great Pizza. Players serve Cambodian food, earn money, level up, unlock new equipment, and manage customer orders in a fun and interactive environment.
 
+## Demo Screenshot
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Sotheany-web/3D-Game/main/3DGamePicture.png" width="800">
+</p>
+
+---
+
+## Demo Video
+
+Watch the gameplay demo here:
+
+[▶️ Watch Demo Video](https://github.com/Sotheany-web/3D-Game/blob/main/3Dgame_video.mp4)
+
+Or download the video directly:
+
+[📥 Download Demo](https://raw.githubusercontent.com/Sotheany-web/3D-Game/main/3Dgame_video.mp4)
+
 ## Project Overview
 
 BaySrob is a single-player restaurant management game developed as an Object-Oriented Programming (OOP) project. The game combines cooking, customer service, progression systems, AI behavior, and persistent data storage into a complete simulation experience.
