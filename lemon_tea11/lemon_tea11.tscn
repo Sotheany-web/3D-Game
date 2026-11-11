@@ -2,7 +2,7 @@
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7qqxk"]
 transparency = 1
-albedo_color = Color(1, 1, 1, 0.050980393)
+albedo_color = Color(1, 1, 1, 0.03137255)
 metallic_specular = 1.0
 roughness = 0.05
 
@@ -21,7 +21,7 @@ radial_segments = 48
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8v6th"]
 transparency = 1
 depth_draw_mode = 1
-albedo_color = Color(0.98039216, 0.5529412, 0, 0.84705883)
+albedo_color = Color(0.97, 0.50278336, 0.14549997, 1)
 roughness = 0.2
 clearcoat_enabled = true
 clearcoat = 0.2

@@ -1,62 +1,121 @@
 extends Node3D
 
-# How often the machine dispenses drinks (seconds)
-@export var dispense_interval := 5.0
+@export var dispense_interval: float = 5.0
+@export var drink_scene: PackedScene
+@export var max_stack: int = 3
 
-# Path to the drink cup prefab
-@export var drink_scene: PackedScene = preload("res://lemon_tea11/lemon_tea11.tscn")
+#cup size when sitting on machine 
+@export var machine_cup_scale: Vector3 = Vector3(0.65,0.65, 0.65)
 
-# Internal state
-var is_dispensing := false
+@onready var timer: Timer = $Timer
+@onready var pickup_area: Area3D = $PickupArea
+@onready var sp1: Node3D = $SpawnPoint1
+@onready var sp2: Node3D = $SpawnPoint2
+@onready var sp3: Node3D = $SpawnPoint3
 
-func _ready():
-	$Timer.wait_time = dispense_interval
-	$Timer.autostart = true
-	$Timer.one_shot = false
-	$Timer.start()
-	$Timer.timeout.connect(_on_Timer_timeout)
+# Add sound node
+@onready var dispense_sound: AudioStreamPlayer = $DispenseSound
 
-func _on_Timer_timeout() -> void:
+var stack: Array[Node3D] = []
+var is_making: bool = false
 
-	#if the cup queue to 3 the machine will stop make it 
-	var cups = get_tree().get_nodes_in_group("cups")
-	if cups.size() >= 3:
-		return  # stop spawning if 3 cups already exist
+func _ready() -> void:
+	if drink_scene == null:
+		push_error("DrinkMachine: Assign drink_scene in Inspector.")
+		return
 
-# Start dispensing process
-	if not is_dispensing:
-		is_dispensing = true
-		# Play pouring sound while the machine is "making" the cup
-		$AudioStreamPlayer.play()
+	pickup_area.monitoring = true
+	pickup_area.monitorable = true
 
-		# Use a one-shot timer to delay the actual spawn until after dispense_interval
-		var spawn_timer := Timer.new()
-		spawn_timer.wait_time = dispense_interval
-		spawn_timer.one_shot = true
-		spawn_timer.timeout.connect(_spawn_drink)
-		add_child(spawn_timer)
-		spawn_timer.start()
+	timer.stop()
+	timer.one_shot = true
+	timer.wait_time = dispense_interval
+	if not timer.timeout.is_connected(_on_make_done):
+		timer.timeout.connect(_on_make_done)
 
-func _spawn_drink()-> void:
-	var cups = get_tree().get_nodes_in_group("cups")
-	var index = cups.size()  # 0, 1, or 2
+	if not pickup_area.body_entered.is_connected(_on_body_entered):
+		pickup_area.body_entered.connect(_on_body_entered)
 
-	# Get the corresponding spawn marker
-	var marker_name = "SpawnPoint" + str(index + 1)
-	var marker = get_node(marker_name)   # shorthand for $SpawnPoint1, $SpawnPoint2, etc.
+	_start_making()
 
+func _start_making() -> void:
+	if is_making: return
+	if stack.size() >= max_stack: return
+	is_making = true
+	timer.start()
+
+func _on_make_done() -> void:
+	is_making = false
+	_spawn_one()
+	# Play sound when drink is ready
+	if dispense_sound:
+		dispense_sound.stop()
+		dispense_sound.play()
+
+	if stack.size() < max_stack:
+		_start_making()
+
+func _spawn_one() -> void:
+	if stack.size() >= max_stack:
+		return
+
+	var marker: Node3D = _marker_for_index(stack.size())
 	if marker == null:
-		return  # safety check
+		return
 
-	# Spawn a new drink cup at the SpawnPoint, every cup will be at the origin position 
-	var drink = drink_scene.instantiate() #let drink be the variable that contain the drink node
-	drink.add_to_group("cups")   # <-- make sure cups are tracked
-	
-	#Place at the chosen marker
-	drink.global_transform.origin = marker.global_transform.origin
+	var cup := drink_scene.instantiate() as Node3D
+	if cup == null:
+		push_error("DrinkMachine: drink_scene root must be Node3D.")
+		return
 
-	# Add the drink to the main scene (so it's free to be picked up), with this line the drink will be added to the scene and could be pick up 
-	get_tree().current_scene.add_child(drink)
+	add_child(cup)
+	cup.global_transform = marker.global_transform
+	cup.scale = machine_cup_scale
 
-	# Reset state
-	is_dispensing = false
+	stack.append(cup)
+	# Save machine state
+	GameDataManager.data["cooking_stations"]["soda_fountain"] = stack.size()
+	GameDataManager.save_game()
+
+func _marker_for_index(i: int) -> Node3D:
+	match i:
+		0: return sp1
+		1: return sp2
+		2: return sp3
+		_: return null
+
+func _on_body_entered(body: Node) -> void:
+	var player := _find_player(body)
+	if player == null:
+		return
+	if not player.has_method("pick_up_drink"):
+		return
+	if not ("held_drink" in player):
+		return
+
+	# already holding drink don't take new one
+	if player.held_drink != null:
+		return
+
+	if stack.is_empty():
+		return
+
+	var cup: Node3D = stack.pop_back()
+	if cup != null and is_instance_valid(cup):
+		player.pick_up_drink(cup) 
+		# Update inventory in GameDataManager
+		GameDataManager.add_item("drink")
+
+		# Save machine state
+		GameDataManager.data["cooking_stations"]["soda_fountain"] = stack.size()
+		GameDataManager.save_game()
+
+	_start_making()
+
+func _find_player(n: Node) -> Node:
+	var cur: Node = n
+	while cur != null:
+		if cur.has_method("pick_up_drink"):
+			return cur
+		cur = cur.get_parent()
+	return null

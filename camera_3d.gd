@@ -10,6 +10,5 @@ func _process(delta):
 		var desired_pos = target.global_position + offset
 		# Smoothly move camera to that position
 		global_position = lerp(global_position, desired_pos, smooth_speed * delta)
-
 		# Make camera always look at the character
 		look_at(target.global_position, Vector3.UP)

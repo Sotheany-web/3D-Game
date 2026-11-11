@@ -1,42 +1,30 @@
+# res://audio.gd
 extends Node
 
-# Code adapted from KidsCanCode
+signal music_volume_changed(value: float)
 
-var num_players = 12
-var bus = "master"
+const MUSIC_BUS := "Music"
+var music_linear: float = 0.5
 
-var available = []  # The available players.
-var queue = []  # The queue of {path, volume} dictionaries.
+func _ready() -> void:
+	# Initialize from current bus value, then apply (keeps consistent)
+	music_linear = get_music_volume()
+	set_music_volume(music_linear)
 
-func _ready():
-	for i in num_players:
-		var p = AudioStreamPlayer.new()
-		add_child(p)
+func set_music_volume(v: float) -> void:
+	music_linear = clamp(v, 0.0, 1.0)
 
-		available.append(p)
+	var id := AudioServer.get_bus_index(MUSIC_BUS)
+	if id == -1:
+		push_warning("Audio bus not found: " + MUSIC_BUS)
+		return
 
-		p.volume_db = -10
-		p.finished.connect(_on_stream_finished.bind(p))
-		p.bus = bus
+	AudioServer.set_bus_volume_db(id, linear_to_db(music_linear))
+	emit_signal("music_volume_changed", music_linear)
 
-func _on_stream_finished(stream):
-	available.append(stream)
+func get_music_volume() -> float:
+	var id := AudioServer.get_bus_index(MUSIC_BUS)
+	if id == -1:
+		return music_linear
 
-func play(sound_path: String, volume_db: float = -10.0):
-	# Path (or multiple, separated by commas)
-	var sounds = sound_path.split(",")
-	var chosen = "res://" + sounds[randi() % sounds.size()].strip_edges()
-	queue.append({
-		"path": chosen,
-		"volume": volume_db
-	})
-
-func _process(_delta):
-	if not queue.is_empty() and not available.is_empty():
-		var item = queue.pop_front()
-		var player = available.pop_front()
-
-		player.stream = load(item["path"])
-		player.volume_db = item["volume"]
-		player.pitch_scale = randf_range(0.9, 1.1)
-		player.play()
+	return db_to_linear(AudioServer.get_bus_volume_db(id))
